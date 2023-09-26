@@ -29,10 +29,10 @@ class CompanyController extends Controller
     /**
      * Exibe uma empresa específica.
      *
-     * @param string $id
+     * @param int $id
      * @return JsonResponse
      */
-    public function show(string $id): JsonResponse
+    public function show(int $id): JsonResponse
     {
         $company = Company::find($id);
 
@@ -52,19 +52,17 @@ class CompanyController extends Controller
     public function store(CompanyRequest $request): JsonResponse
     {
         try {
-            // Valida a requisição
-            $data = $request->validated();
+            // Cria a empresa no banco de dados
+            $company = new Company;
 
-            //retorna mensagem de erro da validação
-            if ($request->fails()) {
-                return response()->json(['message' => $request->errors()], 400);
-            }
+            $company->name = $request->name;
+            $company->cnpj = $request->cnpj;
+            $company->photo = $request->photo;
 
-            // Cria a empresa
-            $company = new Company($data);
             $company->save();
 
             return response()->json(['data' => $company], 201);
+
         } catch (QueryException $e) {
             return response()->json(['message' => 'Error creating company: ' . $e->getMessage()], 500);
         }
@@ -74,10 +72,10 @@ class CompanyController extends Controller
      * Atualiza um registro de empresa específica.
      *
      * @param CompanyRequest $request
-     * @param string $id
+     * @param int $id
      * @return JsonResponse
      */
-    public function update(CompanyRequest $request, $id): JsonResponse
+    public function update(CompanyRequest $request, int $id): JsonResponse
     {
         try {
             // Valida a requisição
@@ -89,8 +87,11 @@ class CompanyController extends Controller
                 return response()->json(['message' => 'Company not found'], 404);
             }
 
-            // Atualiza a empresa
-            $company->fill($data);
+            // Atualiza a empresa no banco de dados
+            $company->name = $request->name;
+            $company->cnpj = $request->cnpj;
+            $company->photo = $request->photo;
+
             $company->save();
 
             return response()->json(['data' => $company], 200);
@@ -102,10 +103,10 @@ class CompanyController extends Controller
     /**
      * Remove a empresa especificada do registro.
      *
-     * @param string $id
+     * @param int $id
      * @return JsonResponse
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
         $company = Company::find($id);
 

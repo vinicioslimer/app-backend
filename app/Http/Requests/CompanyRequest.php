@@ -57,23 +57,5 @@ class CompanyRequest extends FormRequest
         if (preg_match('/(\d)\1{13}/', $cnpj)) {
             return false;
         }
-
-        $digit1 = 0;
-        $digit2 = 0;
-
-        for ($i = 0, $j = 5; $i < 12; $i++) {
-            $digit1 += $cnpj[$i] * $j;
-            $digit2 += $cnpj[$i] * ($j + 1);
-            $j = ($j == 2) ? 9 : $j - 1;
-        }
-
-        $remainder1 = $digit1 % 11;
-        $remainder2 = $digit2 % 11;
-
-        $digit1 = ($remainder1 < 2) ? 0 : 11 - $remainder1;
-        $digit2 = ($remainder2 < 2) ? 0 : 11 - $remainder2;
-
-        return ($cnpj[12] == $digit1 && $cnpj[13] == $digit2);
     }
-
 }
