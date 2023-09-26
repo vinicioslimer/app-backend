@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyRequest;
 use App\Models\Company;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,13 +18,12 @@ class CompanyController extends Controller
     public function index(): JsonResponse
     {
         $companies = Company::all();
-        return response()->json(['companies' => $companies]);
 
-        //caso não encontre nenhuma empresa
-        if (!$companies) {
+        if (!$companies->isEmpty()) {
+            return response()->json(['companies' => $companies]);
+        } else {
             return response()->json(['message' => 'Companies not found'], 404);
         }
-
     }
 
     /**
@@ -47,20 +47,26 @@ class CompanyController extends Controller
      * Cria um novo registro de empresa.
      *
      * @param CompanyRequest $request
-     * @param string $id
      * @return JsonResponse
      */
     public function store(CompanyRequest $request): JsonResponse
     {
-        //valida a requisição
-        $data = $request->validated();
+        try {
+            // Valida a requisição
+            $data = $request->validated();
 
-        $company = Company::create($data);
-        return response()->json(['data' => $company], 201);
+            //retorna mensagem de erro da validação
+            if ($request->fails()) {
+                return response()->json(['message' => $request->errors()], 400);
+            }
 
-        //caso não consiga criar a empresa
-        if (!$company) {
-            return response()->json(['message' => 'Company not created'], 404);
+            // Cria a empresa
+            $company = new Company($data);
+            $company->save();
+
+            return response()->json(['data' => $company], 201);
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'Error creating company: ' . $e->getMessage()], 500);
         }
     }
 
@@ -73,16 +79,24 @@ class CompanyController extends Controller
      */
     public function update(CompanyRequest $request, $id): JsonResponse
     {
-        $company = Company::find($id);
+        try {
+            // Valida a requisição
+            $data = $request->validated();
 
-        if (!$company) {
-            return response()->json(['message' => 'Company not found'], 404);
+            $company = Company::find($id);
+
+            if (!$company) {
+                return response()->json(['message' => 'Company not found'], 404);
+            }
+
+            // Atualiza a empresa
+            $company->fill($data);
+            $company->save();
+
+            return response()->json(['data' => $company], 200);
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'Error updating company: ' . $e->getMessage()], 500);
         }
-
-        $data = $request->validated();
-        $company->update($data);
-
-        return response()->json(['data' => $company], 200);
     }
 
     /**
@@ -99,11 +113,12 @@ class CompanyController extends Controller
             return response()->json(['message' => 'Company not found'], 404);
         }
 
-        // Exclui a foto atrelada a empresa, se ela existir
+        // Exclui a foto atrelada à empresa, se ela existir
         if ($company->photo) {
             Storage::disk('public')->delete($company->photo);
         }
 
+        // Deleta a empresa
         $company->delete();
 
         return response()->json(['message' => 'Company deleted'], 204);

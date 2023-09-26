@@ -4,33 +4,54 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Hash;
 
-class AuthController extends Controller
-{
+class AuthController extends Controller{
+
     public function login(Request $request)
     {
-        $credentials = $request->only(['email', 'password']);
-
-        if (!Auth::attempt($credentials)) {
-            // Verifica se o email existe na tabela de usuários
-            $user = User::where('email', $credentials['email'])->first();
-            if (!$user) {
-                return response()->json(['error' => 'Email não encontrado'], 401);
-            }
-
-            return response()->json(['error' => 'Senha incorreta'], 401);
-        }
-
-        $token = JWTAuth::attempt($credentials);
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+        $credentials = $request->only('email', 'password');
+        $token = Auth::attempt($credentials);
 
         if (!$token) {
-            return response()->json(['error' => 'Falha ao gerar o token'], 401);
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
         }
 
-        return response()->json(['token' => $token]);
+        $user = Auth::user();
+        return response()->json([
+            'user' => $user,
+            'authorization' => [
+                'token' => $token,
+                'type' => 'bearer',
+            ]
+        ]);    }
+
+
+
+    public function logout()
+    {
+        Auth::logout();
+        return response()->json([
+            'message' => 'Successfully logged out',
+        ]);
+    }
+
+    public function refresh()
+    {
+        return response()->json([
+            'user' => Auth::user(),
+            'authorisation' => [
+                'token' => Auth::refresh(),
+                'type' => 'bearer',
+            ]
+        ]);
     }
 }
-
-

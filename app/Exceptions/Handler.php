@@ -3,9 +3,9 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
 use Throwable;
-use Tymon\JWTAuth\Exceptions\TokenExpiredException;
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 
 class Handler extends ExceptionHandler
 {
@@ -44,7 +44,7 @@ class Handler extends ExceptionHandler
                 } else if ($e instanceof TokenExpiredException) {
                     $error = 'Token is expired';
                 } else {
-                    $error = 'Unauthorized';
+                    $error = 'Authorization Token not found';
                 }
                 return response()->json(['error' => $error], 401);
             }
