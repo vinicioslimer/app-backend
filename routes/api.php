@@ -6,9 +6,16 @@ use Illuminate\Support\Facades\Route;
 
 // Rota de login
 Route::post('login', [AuthController::class, 'login'])->name('login');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::apiResource('company', CompanyController::class);
+Route::middleware('auth:api')->group(function () {
 
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
+    Route::apiResource('company', CompanyController::class);
+
+    Route::get('datetime', function() {
+        return now();
+    });
+
+});
 

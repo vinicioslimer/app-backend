@@ -15,19 +15,19 @@ class CompanyRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255'],
             'cnpj' => [
                 'required',
                 'string',
                 'digits:14',
                 Rule::unique('companies', 'cnpj')->ignore($this->route('company')),
-                function ($attribute, $value, $fail) {
+                /*function ($attribute, $value, $fail) {
                     if (!$this->isValidCnpj($value)) {
                         $fail('O CNPJ não é válido.');
                     }
-                },
+                }, */
             ],
-            'photo' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
     }
 

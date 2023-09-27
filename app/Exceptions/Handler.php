@@ -5,6 +5,7 @@ namespace App\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -37,16 +38,21 @@ class Handler extends ExceptionHandler
     public function register()
     {
         $this->renderable(function (Throwable $e, $request) {
-            if ($request->is('api/*')) {
-                $error = '';
+
+            if ($request->expectsJson()) {
+
                 if ($e instanceof TokenInvalidException) {
-                    $error = 'Token is invalid';
+                    return response()->json(['error' => 'Token is invalid'], 401);
+
                 } else if ($e instanceof TokenExpiredException) {
-                    $error = 'Token is expired';
+                    return response()->json(['error' => 'Token is expired'], 401);
+
+                } else if ($e instanceof NotFoundHttpException) {
+                    return response()->json(['error' => $e->getMessage()], 404);
+
                 } else {
-                    $error = 'Authorization Token not found';
+                    return response()->json(['error' => 'Unexpected error: ' . $e->getMessage()], 500);
                 }
-                return response()->json(['error' => $error], 401);
             }
         });
     }

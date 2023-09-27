@@ -6,6 +6,7 @@ use App\Http\Requests\CompanyRequest;
 use App\Models\Company;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
 class CompanyController extends Controller
@@ -19,11 +20,11 @@ class CompanyController extends Controller
     {
         $companies = Company::all();
 
-        if (!$companies->isEmpty()) {
-            return response()->json(['companies' => $companies]);
-        } else {
+        if ($companies->isEmpty()) {
             return response()->json(['message' => 'Companies not found'], 404);
         }
+
+        return response()->json($companies);
     }
 
     /**
@@ -32,15 +33,9 @@ class CompanyController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function show(int $id): JsonResponse
+    public function show(Company $company): JsonResponse
     {
-        $company = Company::find($id);
-
-        if (!$company) {
-            return response()->json(['message' => 'Company not found'], 404);
-        }
-
-        return response()->json(['company' => $company]);
+        return response()->json($company);
     }
 
     /**
@@ -51,21 +46,16 @@ class CompanyController extends Controller
      */
     public function store(CompanyRequest $request): JsonResponse
     {
-        try {
-            // Cria a empresa no banco de dados
-            $company = new Company;
+        // Cria a empresa no banco de dados
+        $company = new Company;
 
-            $company->name = $request->name;
-            $company->cnpj = $request->cnpj;
-            $company->photo = $request->photo;
+        $company->name = $request->name;
+        $company->cnpj = $request->cnpj;
+        $company->photo = $request->photo;
 
-            $company->save();
+        $company->save();
 
-            return response()->json(['data' => $company], 201);
-
-        } catch (QueryException $e) {
-            return response()->json(['message' => 'Error creating company: ' . $e->getMessage()], 500);
-        }
+        return response()->json($company, Response::HTTP_CREATED);
     }
 
     /**
@@ -75,29 +65,16 @@ class CompanyController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function update(CompanyRequest $request, int $id): JsonResponse
+    public function update(Company $company, CompanyRequest $request): JsonResponse
     {
-        try {
-            // Valida a requisição
-            $data = $request->validated();
+        // Atualiza a empresa no banco de dados
+        $company->name = $request->name;
+        $company->cnpj = $request->cnpj;
+        $company->photo = $request->photo;
 
-            $company = Company::find($id);
+        $company->save();
 
-            if (!$company) {
-                return response()->json(['message' => 'Company not found'], 404);
-            }
-
-            // Atualiza a empresa no banco de dados
-            $company->name = $request->name;
-            $company->cnpj = $request->cnpj;
-            $company->photo = $request->photo;
-
-            $company->save();
-
-            return response()->json(['data' => $company], 200);
-        } catch (QueryException $e) {
-            return response()->json(['message' => 'Error updating company: ' . $e->getMessage()], 500);
-        }
+        return response()->json($company);
     }
 
     /**
@@ -106,22 +83,16 @@ class CompanyController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Company $company): JsonResponse
     {
-        $company = Company::find($id);
-
-        if (!$company) {
-            return response()->json(['message' => 'Company not found'], 404);
-        }
-
         // Exclui a foto atrelada à empresa, se ela existir
         if ($company->photo) {
-            Storage::disk('public')->delete($company->photo);
+            Storage::delete($company->photo);
         }
 
         // Deleta a empresa
         $company->delete();
 
-        return response()->json(['message' => 'Company deleted'], 204);
+        return response()->json(['status' => true], Response::HTTP_NO_CONTENT);
     }
 }
